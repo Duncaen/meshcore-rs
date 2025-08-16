@@ -1,7 +1,9 @@
 [package]
 name = "meshcore_companion"
+description = "meshcore companion serial protocol"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 defmt = { version = "1.0.1", optional = true }

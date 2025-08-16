@@ -1,7 +1,9 @@
 [package]
 name = "meshcore"
+description = "meshcore protocol"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 zerocopy = { version = "0.8.26", features = ["derive"] }
