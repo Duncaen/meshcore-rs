@@ -1,15 +1,7 @@
 use crate::{Error, Result};
 use aes::Aes128;
 use cipher::{BlockDecrypt, KeyInit, generic_array::GenericArray};
-use dryoc::{
-    classic::{
-        crypto_core::crypto_scalarmult,
-        crypto_sign_ed25519::{
-            crypto_sign_ed25519_pk_to_curve25519, crypto_sign_ed25519_sk_to_curve25519,
-        },
-    },
-    constants::{CRYPTO_SCALARMULT_CURVE25519_BYTES, CRYPTO_SCALARMULT_CURVE25519_SCALARBYTES},
-};
+use ed25519_dalek::{SigningKey, VerifyingKey};
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
@@ -49,11 +41,13 @@ pub fn aes_ecb_decrypt<'a>(dst: &'a mut [u8], src: &[u8], key: &[u8; 16]) -> Res
 }
 
 pub fn ed25519_key_exchange(q: &mut [u8; 32], pk: &[u8; 32], sk: &[u8; 64]) -> Result<()> {
-    let mut xpk = [0u8; CRYPTO_SCALARMULT_CURVE25519_BYTES];
-    let mut xsk = [0u8; CRYPTO_SCALARMULT_CURVE25519_SCALARBYTES];
-    crypto_sign_ed25519_pk_to_curve25519(&mut xpk, &pk).map_err(|_| Error::VerifyError)?;
-    crypto_sign_ed25519_sk_to_curve25519(&mut xsk, &sk);
-    crypto_scalarmult(q, &xsk, &xpk);
+    let pk = VerifyingKey::from_bytes(pk)
+        .map_err(|_| Error::VerifyError)?
+        .to_montgomery();
+    let sk = SigningKey::from_keypair_bytes(sk)
+        .map_err(|_| Error::VerifyError)?
+        .to_scalar_bytes();
+    q.copy_from_slice(pk.mul_clamped(sk).as_bytes());
     Ok(())
 }
 
